@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { supabase } from "@/lib/supabase";
 
+type PlanType = "starter" | "professional" | "enterprise";
+type BillingPeriod = "monthly" | "annual";
+type PriceKey = `${PlanType}_${BillingPeriod}`;
+
 export async function POST(request: NextRequest) {
   try {
-    const { planType, billingPeriod, restaurantId } = await request.json();
+    const { planType, billingPeriod, restaurantId } = (await request.json()) as {
+      planType: PlanType;
+      billingPeriod: BillingPeriod;
+      restaurantId: string;
+    };
 
     if (!restaurantId) {
       return NextResponse.json(
@@ -14,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Map plan to Stripe product IDs (you'll need to create these in Stripe)
-    const priceIdMap = {
+    const priceIdMap: Record<PriceKey, string> = {
       starter_monthly: "price_starter_monthly",
       starter_annual: "price_starter_annual",
       professional_monthly: "price_professional_monthly",
@@ -23,7 +31,8 @@ export async function POST(request: NextRequest) {
       enterprise_annual: "price_enterprise_annual",
     };
 
-    const priceId = priceIdMap[`${planType}_${billingPeriod}`];
+    const key = `${planType}_${billingPeriod}` as PriceKey;
+    const priceId = priceIdMap[key];
 
     if (!priceId) {
       return NextResponse.json(
