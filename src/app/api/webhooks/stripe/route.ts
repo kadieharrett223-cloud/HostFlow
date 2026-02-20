@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Stripe } from "stripe";
 import { stripe } from "@/lib/stripe";
 import { supabase } from "@/lib/supabase";
+import type { Event } from "stripe";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.text();
 
-  let event: Stripe.Event;
+  let event: Event;
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case "customer.subscription.created":
       case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object as any;
         const restaurantId = subscription.metadata?.restaurant_id;
 
         if (restaurantId) {
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object as any;
         const restaurantId = subscription.metadata?.restaurant_id;
 
         if (restaurantId) {
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object as any;
         const subscriptionId = invoice.subscription as string;
 
         // Update subscription status to past_due
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "invoice.paid": {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object as any;
         const subscriptionId = invoice.subscription as string;
 
         // Update subscription status to active
